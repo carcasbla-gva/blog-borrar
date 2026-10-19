@@ -4,7 +4,11 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;       // <--- AÑADIR ESTA LÍNEA
 use Symfony\Component\Routing\Attribute\Route;
+use Doctrine\Persistence\ManagerRegistry;
+use App\Entity\Contact;
+use App\Form\ContactFormType;                        // <--- AÑADIR ESTA LÍNEA
 
 final class PageController extends AbstractController
 {
@@ -20,11 +24,11 @@ final class PageController extends AbstractController
         return $this->render('about.html.twig', []);
     }
 
-    #[Route('/contact', name: 'contact')]
-    public function contact(): Response
-    {
-        return $this->render('contact.html.twig', []);
-    }
+    // #[Route('/contact', name: 'contact')]
+    // public function contact(): Response
+    // {
+    //     return $this->render('contact.html.twig', []);
+    // }
     #[Route('/blog', name: 'blog')]
     public function blog(): Response
     {
@@ -34,5 +38,22 @@ final class PageController extends AbstractController
     public function single_post(): Response
     {
         return $this->render('single_post.html.twig', []);
+    }
+    #[Route('/contact', name: 'contact')]
+    public function contact(ManagerRegistry $doctrine, Request $request): Response
+    {
+        $contact = new Contact();
+        $form = $this->createForm(ContactFormType::class, $contact);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $contacto = $form->getData();
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($contacto);
+            $entityManager->flush();
+            return $this->redirectToRoute('index', []);
+        }
+        return $this->render('pages/contact.html.twig', array(
+            'form' => $form->createView()
+        ));
     }
 }
