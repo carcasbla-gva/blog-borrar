@@ -52,7 +52,7 @@ final class PageController extends AbstractController
             $entityManager->flush();
             return $this->redirectToRoute('index', []);
         }
-        return $this->render('pages/contact.html.twig', array(
+        return $this->render('contact.html.twig', array(
             'form' => $form->createView()
         ));
     }
