@@ -9,14 +9,21 @@ use Symfony\Component\Routing\Attribute\Route;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Entity\Contact;
 use App\Form\ContactFormType;                        // <--- AÑADIR ESTA LÍNEA
+use App\Entity\Category;
 
 final class PageController extends AbstractController
 {
     #[Route('/', name: 'index')]
-    public function index(): Response
+    public function index(ManagerRegistry $doctrine): Response
     {
-        return $this->render('index.html.twig', []);
+        $repository = $doctrine->getRepository(Category::class);
+        $categories = $repository->findAll();
+
+        return $this->render('index.html.twig', [
+            'categories' => $categories,
+        ]);
     }
+
 
     #[Route('/about', name: 'about')]
     public function about(): Response
@@ -56,7 +63,7 @@ final class PageController extends AbstractController
             'form' => $form->createView()
         ));
     }
-        #[Route('/thankyou', name: 'thankyou')]
+    #[Route('/thankyou', name: 'thankyou')]
     public function thankyou(): Response
     {
         return $this->render('thankyou.html.twig', []);
