@@ -27,6 +27,14 @@ class PostRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    /**
+     * @return Post[] Returns an array of Post objects
+     */
+    public function findAll(): array
+    {
+        return $this->findBy([], ['publishedAt' => 'DESC']);
+    }
+
 
     //    /**
 //     * @return Post[] Returns an array of Post objects
