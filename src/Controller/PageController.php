@@ -16,6 +16,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use App\Entity\Comment;
 use App\Form\CommentFormType;
+use App\Repository\PostRepository;
 
 final class PageController extends AbstractController
 {
@@ -45,6 +46,7 @@ final class PageController extends AbstractController
     #[Route('/blog/{page}', name: 'blog', requirements: ['page' => '\d+'], defaults: ['page' => 1])]
     public function blog(ManagerRegistry $doctrine, int $page = 1): Response
     {
+        /** @var PostRepository $repository */
         $repository = $doctrine->getRepository(Post::class);
         $posts = $repository->findAll();
         $recents = $repository->findRecents();
@@ -57,6 +59,7 @@ final class PageController extends AbstractController
     #[Route('/single_post/{slug}', name: 'single_post')]
     public function post(ManagerRegistry $doctrine, Request $request, string $slug): Response
     {
+        /** @var PostRepository $repository */
         $repository = $doctrine->getRepository(Post::class);
         $post = $repository->findOneBy(['slug' => $slug]);
         $recents = $repository->findRecents();
