@@ -14,12 +14,15 @@ use App\Entity\Post;
 use App\Form\PostFormType;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Entity\Comment;
 use App\Form\CommentFormType;
 use App\Repository\PostRepository;
 
 final class PageController extends AbstractController
 {
+    private const POSTS_PER_PAGE = 5;
+
     #[Route('/', name: 'index')]
     public function index(ManagerRegistry $doctrine): Response
     {
@@ -43,16 +46,45 @@ final class PageController extends AbstractController
     // {
     //     return $this->render('contact.html.twig', []);
     // }
+
     #[Route('/blog/{page}', name: 'blog', requirements: ['page' => '\d+'], defaults: ['page' => 1])]
+
     public function blog(ManagerRegistry $doctrine, int $page = 1): Response
     {
         /** @var PostRepository $repository */
+        $page = max(1, $page);
         $repository = $doctrine->getRepository(Post::class);
-        $posts = $repository->findAll();
+        $posts = $repository->findPaginados($page, self::POSTS_PER_PAGE);
         $recents = $repository->findRecents();
+
+        $total = count($posts);
+        $totalPages = max(1, (int) ceil($total / self::POSTS_PER_PAGE));
+
+        if ($page > $totalPages) {
+            return $this->redirectToRoute('blog', ['page' => $totalPages]);
+        }
+
         return $this->render('blog/blog.html.twig', [
             'posts' => $posts,
             'recents' => $recents,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
+        ]);
+    }
+
+    #[Route('/blog/buscar', name: 'blog_buscar')]
+    public function buscar(ManagerRegistry $doctrine, Request $request): Response
+    {
+        $repository = $doctrine->getRepository(Post::class);
+        $searchTerm = $request->query->get('searchTerm', '');
+        $posts = $repository->findByText($searchTerm);
+        $recents = $repository->findRecents();
+
+        return $this->render('blog/blog.html.twig', [
+            'posts' => $posts,
+            'recents' => $recents,
+            'searchTerm' => $searchTerm,
         ]);
     }
 
@@ -84,6 +116,20 @@ final class PageController extends AbstractController
             'recents' => $recents,
             'form' => $form->createView(),
         ]);
+    }
+
+    #[Route('/single_post/{slug}/like', name: 'post_like')]
+    public function like(ManagerRegistry $doctrine, $slug): JsonResponse
+    {
+        $repository = $doctrine->getRepository(Post::class);
+        $post = $repository->findOneBy(['slug' => $slug]);
+        $post->like();
+        $entityManager = $doctrine->getManager();
+        $entityManager->persist($post);
+        $entityManager->flush();
+
+        $data = ['success' => true, 'likes' => $post->getNumLikes()];
+        return $this->json($data);
     }
 
 
